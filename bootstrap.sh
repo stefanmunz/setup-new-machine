@@ -170,8 +170,8 @@ install_mise() {
     fi
 }
 
-# Install Go via mise
-install_go() {
+# Install dev tools via mise
+install_mise_tools() {
     local mise_cmd="$HOME/.local/bin/mise"
 
     if ! [[ -x "$mise_cmd" ]]; then
@@ -182,12 +182,102 @@ install_go() {
         fi
     fi
 
-    log_info "Installing Go 1.25 globally via mise..."
-    if $mise_cmd use --global go@1.25; then
-        log_info "Go installed successfully"
-    else
-        error_exit "Failed to install Go" 7
+    log_info "Installing development tools via mise..."
+
+    # Go
+    log_info "  Installing Go 1.25..."
+    $mise_cmd use --global go@1.25 || log_warn "Failed to install Go"
+
+    # Node.js
+    log_info "  Installing Node.js 22..."
+    $mise_cmd use --global node@22 || log_warn "Failed to install Node.js"
+
+    # Python
+    log_info "  Installing Python 3.12..."
+    $mise_cmd use --global python@3.12 || log_warn "Failed to install Python"
+
+    # Ruby
+    log_info "  Installing Ruby 3.3..."
+    $mise_cmd use --global ruby@3.3 || log_warn "Failed to install Ruby"
+
+    # golangci-lint
+    log_info "  Installing golangci-lint..."
+    $mise_cmd use --global golangci-lint || log_warn "Failed to install golangci-lint"
+
+    log_info "mise tools installed successfully"
+}
+
+# Install CLI tools via Homebrew
+install_brew_tools() {
+    log_info "Installing CLI tools via Homebrew..."
+
+    local tools=(
+        "gh"              # GitHub CLI
+        "ripgrep"         # Fast grep
+        "chezmoi"         # Dotfile manager
+    )
+
+    for tool in "${tools[@]}"; do
+        if brew list "$tool" &>/dev/null; then
+            log_info "  $tool already installed"
+        else
+            log_info "  Installing $tool..."
+            brew install "$tool" || log_warn "Failed to install $tool"
+        fi
+    done
+
+    log_info "CLI tools installed"
+}
+
+# Install casks via Homebrew
+install_brew_casks() {
+    log_info "Installing applications via Homebrew..."
+
+    local casks=(
+        "1password-cli"   # 1Password CLI
+    )
+
+    for cask in "${casks[@]}"; do
+        if brew list --cask "$cask" &>/dev/null; then
+            log_info "  $cask already installed"
+        else
+            log_info "  Installing $cask..."
+            brew install --cask "$cask" || log_warn "Failed to install $cask"
+        fi
+    done
+
+    log_info "Applications installed"
+}
+
+# Install VS Code extensions
+install_vscode_extensions() {
+    if ! command -v code &> /dev/null; then
+        log_warn "VS Code CLI not found. Install VS Code first, then run:"
+        log_warn "  code --install-extension <extension-id>"
+        return 0
     fi
+
+    log_info "Installing VS Code extensions..."
+
+    local extensions=(
+        "anthropic.claude-code"           # Claude Code
+        "github.vscode-github-actions"    # GitHub Actions
+        "golang.go"                       # Go
+        "ms-python.python"                # Python
+        "ms-python.vscode-pylance"        # Python language server
+        "esbenp.prettier-vscode"          # Prettier
+        "editorconfig.editorconfig"       # EditorConfig
+        "mhutchie.git-graph"              # Git Graph
+        "redhat.vscode-yaml"              # YAML
+        "shopify.ruby-lsp"                # Ruby
+    )
+
+    for ext in "${extensions[@]}"; do
+        log_info "  Installing $ext..."
+        code --install-extension "$ext" --force || log_warn "Failed to install $ext"
+    done
+
+    log_info "VS Code extensions installed"
 }
 
 # Configure shell
@@ -225,18 +315,21 @@ main() {
     echo ""
     echo "========================================"
     echo "  Setup New Machine"
-    echo "  zsh + oh-my-zsh + mise + Go"
+    echo "  Complete dev environment setup"
     echo "========================================"
     echo ""
 
     check_xcode_clt
     install_homebrew
     install_git
+    install_brew_tools
+    install_brew_casks
     setup_zsh
     install_ohmyzsh
     install_mise
-    install_go
+    install_mise_tools
     configure_shell
+    install_vscode_extensions
 
     echo ""
     log_info "========================================="
@@ -244,20 +337,35 @@ main() {
     log_info "========================================="
     echo ""
     log_info "Installed:"
-    log_info "  - Homebrew (package manager)"
-    log_info "  - Git (via Homebrew)"
-    log_info "  - zsh (set as default shell)"
-    log_info "  - oh-my-zsh (zsh framework)"
-    log_info "  - mise (version manager)"
-    log_info "  - Go 1.25 (via mise)"
+    log_info "  Shell:"
+    log_info "    - zsh (default shell)"
+    log_info "    - oh-my-zsh"
+    echo ""
+    log_info "  Via Homebrew:"
+    log_info "    - git, gh, ripgrep, chezmoi"
+    log_info "    - 1password-cli"
+    echo ""
+    log_info "  Via mise:"
+    log_info "    - Go 1.25"
+    log_info "    - Node.js 22"
+    log_info "    - Python 3.12"
+    log_info "    - Ruby 3.3"
+    log_info "    - golangci-lint"
+    echo ""
+    log_info "  VS Code extensions (if VS Code installed)"
     echo ""
     log_warn "IMPORTANT: Open a new terminal for all changes to take effect."
     echo ""
     log_info "Verify your setup in a new terminal:"
     echo "    zsh --version"
     echo "    git --version"
-    echo "    mise --version"
     echo "    go version"
+    echo "    node --version"
+    echo "    python --version"
+    echo "    ruby --version"
+    echo ""
+    log_info "Next step: Set up your dotfiles with chezmoi:"
+    echo "    chezmoi init"
     echo ""
 }
 

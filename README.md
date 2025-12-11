@@ -1,15 +1,37 @@
 # setup-new-machine
 
-One-command setup for a fresh Mac with a modern development environment.
+One-command setup for a fresh Mac with a complete development environment.
 
 ## What Gets Installed
 
+### Shell
 - **zsh** - Set as default shell (uses macOS built-in `/bin/zsh`)
 - **oh-my-zsh** - Framework for managing zsh configuration
-- **Homebrew** - Package manager for macOS
-- **Git** - Version control (via Homebrew, not Apple's outdated version)
-- **mise** - Polyglot version manager for dev tools
-- **Go 1.25** - Latest Go version (via mise)
+
+### Via Homebrew
+- **git** - Version control (Homebrew version, not Apple's outdated one)
+- **gh** - GitHub CLI
+- **ripgrep** - Fast grep replacement
+- **chezmoi** - Dotfile manager
+- **1password-cli** - 1Password CLI for secrets management
+
+### Via mise (version manager)
+- **Go 1.25**
+- **Node.js 22**
+- **Python 3.12**
+- **Ruby 3.3**
+- **golangci-lint**
+
+### VS Code Extensions (if VS Code is installed)
+- Claude Code
+- Go
+- Python + Pylance
+- Ruby LSP
+- GitHub Actions
+- Prettier
+- EditorConfig
+- Git Graph
+- YAML
 
 ## Setup
 
@@ -35,25 +57,41 @@ In a new terminal:
 ```bash
 zsh --version      # Should show zsh 5.9 or similar
 git --version      # Should show git 2.x.x (no "Apple Git")
-mise --version     # Should show mise version
 go version         # Should show go1.25.x
+node --version     # Should show v22.x.x
+python --version   # Should show Python 3.12.x
+ruby --version     # Should show ruby 3.3.x
 ```
 
-## Adding More Tools
+## Next Steps
 
-Use mise to install additional development tools:
+### Set up dotfiles with chezmoi
 
 ```bash
-# Node.js
-mise use --global node@22
+chezmoi init
+chezmoi add ~/.zshrc
+chezmoi cd  # Opens chezmoi repo
+```
 
-# Python
-mise use --global python@3.12
+### Add more tools via mise
 
-# Other tools
-mise use --global ripgrep
+```bash
+mise use --global terraform
+mise use --global kubectl
 mise use --global jq
 mise use --global fzf
 ```
 
 See all available tools: https://mise.jdx.dev/registry.html
+
+### Authenticate with GitHub
+
+```bash
+gh auth login
+```
+
+### Set up 1Password CLI
+
+```bash
+op signin
+```
