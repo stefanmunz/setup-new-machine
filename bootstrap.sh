@@ -234,7 +234,8 @@ install_brew_casks() {
     log_info "Installing applications via Homebrew..."
 
     local casks=(
-        "1password-cli"   # 1Password CLI
+        "visual-studio-code"  # VS Code
+        "1password-cli"       # 1Password CLI
     )
 
     for cask in "${casks[@]}"; do

@@ -13,6 +13,7 @@ One-command setup for a fresh Mac with a complete development environment.
 - **gh** - GitHub CLI
 - **ripgrep** - Fast grep replacement
 - **chezmoi** - Dotfile manager
+- **Visual Studio Code** - Code editor
 - **1password-cli** - 1Password CLI for secrets management
 
 ### Via mise (version manager)
