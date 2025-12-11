@@ -311,6 +311,25 @@ configure_shell() {
     log_info "Shell configuration updated"
 }
 
+# Setup dotfiles via chezmoi
+setup_dotfiles() {
+    log_info "Setting up dotfiles via chezmoi..."
+
+    # Use HTTPS for initial clone (no SSH key yet)
+    # The dotfiles include a script that will:
+    # 1. Generate an SSH key for this machine
+    # 2. Upload it to GitHub via gh
+    # 3. Switch the remote to SSH
+
+    if [[ -d "$HOME/.local/share/chezmoi" ]] && [[ -d "$HOME/.local/share/chezmoi/.git" ]]; then
+        log_info "chezmoi already initialized, updating..."
+        chezmoi update || log_warn "Could not update chezmoi"
+    else
+        log_info "Initializing chezmoi with dotfiles (via HTTPS)..."
+        chezmoi init --apply https://github.com/stefanmunz/dotfiles.git || log_warn "Could not initialize chezmoi"
+    fi
+}
+
 # Main
 main() {
     echo ""
@@ -330,6 +349,7 @@ main() {
     install_mise
     install_mise_tools
     configure_shell
+    setup_dotfiles
     install_vscode_extensions
 
     echo ""
@@ -355,6 +375,10 @@ main() {
     echo ""
     log_info "  VS Code extensions (if VS Code installed)"
     echo ""
+    log_info "  Dotfiles:"
+    log_info "    - .zshrc, .gitconfig, .ssh/config via chezmoi"
+    log_info "    - SSH key generated for this machine"
+    echo ""
     log_warn "IMPORTANT: Open a new terminal for all changes to take effect."
     echo ""
     log_info "Verify your setup in a new terminal:"
@@ -364,9 +388,6 @@ main() {
     echo "    node --version"
     echo "    python --version"
     echo "    ruby --version"
-    echo ""
-    log_info "Next step: Set up your dotfiles with chezmoi:"
-    echo "    chezmoi init"
     echo ""
 }
 
