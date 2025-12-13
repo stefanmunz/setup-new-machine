@@ -315,18 +315,19 @@ configure_shell() {
 setup_dotfiles() {
     log_info "Setting up dotfiles via chezmoi..."
 
-    # Use HTTPS for initial clone (no SSH key yet)
-    # The dotfiles include a script that will:
-    # 1. Generate an SSH key for this machine
-    # 2. Upload it to GitHub via gh
-    # 3. Switch the remote to SSH
+    # Requires: 1Password SSH agent enabled with a GitHub key already added.
+    # Expect ~/.1password/agent.sock to be reachable when this runs.
+    if [[ ! -S "$HOME/.1password/agent.sock" ]]; then
+        log_warn "1Password SSH agent socket not found at ~/.1password/agent.sock."
+        log_warn "Make sure 1Password is unlocked and SSH Agent is enabled before running bootstrap."
+    fi
 
     if [[ -d "$HOME/.local/share/chezmoi" ]] && [[ -d "$HOME/.local/share/chezmoi/.git" ]]; then
         log_info "chezmoi already initialized, updating..."
         chezmoi update || log_warn "Could not update chezmoi"
     else
-        log_info "Initializing chezmoi with dotfiles (via HTTPS)..."
-        chezmoi init --apply https://github.com/stefanmunz/dotfiles.git || log_warn "Could not initialize chezmoi"
+        log_info "Initializing chezmoi with dotfiles (via SSH)..."
+        chezmoi init --apply git@github.com:stefanmunz/dotfiles.git || log_warn "Could not initialize chezmoi (check SSH agent/1Password)"
     fi
 }
 
