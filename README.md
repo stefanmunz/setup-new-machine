@@ -10,7 +10,7 @@ One-command setup for fresh machines with a complete development environment.
 
 **Via Homebrew:** git, gh, ripgrep, chezmoi, VS Code, 1password-cli
 
-**Via mise:** Go 1.25, Node.js 22, Python 3.12, Ruby 3.3, golangci-lint
+**Via mise:** Go 1.25, Node.js (LTS), Python 3.12, Ruby 3.3, golangci-lint
 
 **VS Code Extensions:** Claude Code, Go, Python, Ruby LSP, GitHub Actions, Prettier, etc.
 
@@ -76,7 +76,7 @@ If you rerun it manually, ensure 1Password is unlocked first. After your dotfile
 zsh --version      # zsh 5.9+
 git --version      # git 2.x.x (no "Apple Git")
 go version         # go1.25.x
-node --version     # v22.x.x
+node --version     # v(LTS)
 python --version   # Python 3.12.x
 ruby --version     # ruby 3.3.x
 ```
@@ -89,7 +89,7 @@ ruby --version     # ruby 3.3.x
 
 **Via apt:** git, gh, ripgrep
 
-**Via mise:** Go 1.25, Node.js 22, Python 3.12
+**Via mise:** Go 1.25, Node.js (LTS), Python 3.12
 
 **Dotfiles:** via chezmoi + unique SSH key per machine
 
@@ -106,7 +106,7 @@ Run `source ~/.bashrc` or open a new terminal.
 ```bash
 git --version      # git 2.x.x
 go version         # go1.25.x
-node --version     # v22.x.x
+node --version     # v(LTS)
 python --version   # Python 3.12.x
 ```
 

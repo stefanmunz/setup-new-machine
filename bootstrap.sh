@@ -188,9 +188,9 @@ install_mise_tools() {
     log_info "  Installing Go 1.25..."
     $mise_cmd use --global go@1.25 || log_warn "Failed to install Go"
 
-    # Node.js
-    log_info "  Installing Node.js 22..."
-    $mise_cmd use --global node@22 || log_warn "Failed to install Node.js"
+    # Node.js (LTS)
+    log_info "  Installing Node.js (LTS)..."
+    $mise_cmd use --global node@lts || log_warn "Failed to install Node.js"
 
     # Python
     log_info "  Installing Python 3.12..."
@@ -369,7 +369,7 @@ main() {
     echo ""
     log_info "  Via mise:"
     log_info "    - Go 1.25"
-    log_info "    - Node.js 22"
+    log_info "    - Node.js (LTS)"
     log_info "    - Python 3.12"
     log_info "    - Ruby 3.3"
     log_info "    - golangci-lint"
