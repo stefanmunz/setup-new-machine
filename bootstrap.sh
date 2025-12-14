@@ -23,6 +23,18 @@
 
 set -e
 
+# Version pins for the default toolchain. Update these to match your primary
+# project so new machines have the right versions pre-installed.
+GO_VERSION="1.24.4"
+NODE_VERSION="22.11.0"
+PYTHON_VERSION="3.12"
+GOLANGCI_LINT_VERSION="2.5.0"
+
+# Go-based helper binaries to install globally
+GO_TOOLS=(
+    "github.com/bokwoon95/wgo@latest"
+)
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -185,26 +197,52 @@ install_mise_tools() {
     log_info "Installing development tools via mise..."
 
     # Go
-    log_info "  Installing Go 1.25..."
-    $mise_cmd use --global go@1.25 || log_warn "Failed to install Go"
+    log_info "  Installing Go ${GO_VERSION}..."
+    $mise_cmd use --global "go@${GO_VERSION}" || log_warn "Failed to install Go"
 
-    # Node.js (LTS)
-    log_info "  Installing Node.js (LTS)..."
-    $mise_cmd use --global node@lts || log_warn "Failed to install Node.js"
+    # Node.js
+    log_info "  Installing Node.js ${NODE_VERSION}..."
+    $mise_cmd use --global "node@${NODE_VERSION}" || log_warn "Failed to install Node.js"
 
     # Python
-    log_info "  Installing Python 3.12..."
-    $mise_cmd use --global python@3.12 || log_warn "Failed to install Python"
-
-    # Ruby
-    log_info "  Installing Ruby 3.3..."
-    $mise_cmd use --global ruby@3.3 || log_warn "Failed to install Ruby"
+    log_info "  Installing Python ${PYTHON_VERSION}..."
+    $mise_cmd use --global "python@${PYTHON_VERSION}" || log_warn "Failed to install Python"
 
     # golangci-lint
-    log_info "  Installing golangci-lint..."
-    $mise_cmd use --global golangci-lint || log_warn "Failed to install golangci-lint"
+    log_info "  Installing golangci-lint ${GOLANGCI_LINT_VERSION}..."
+    $mise_cmd use --global "golangci-lint@${GOLANGCI_LINT_VERSION}" || log_warn "Failed to install golangci-lint"
 
     log_info "mise tools installed successfully"
+}
+
+# Install Go helper tools (e.g., wgo) into ~/.local/bin
+install_go_tools() {
+    log_info "Installing Go helper tools..."
+
+    local go_cmd="$HOME/.local/share/mise/shims/go"
+
+    if ! [[ -x "$go_cmd" ]]; then
+        go_cmd=$(command -v go || true)
+    fi
+
+    if [[ -z "$go_cmd" ]]; then
+        log_warn "Go not found; skipping Go helper tools"
+        return 0
+    fi
+
+    mkdir -p "$HOME/.local/bin"
+
+    for tool in "${GO_TOOLS[@]}"; do
+        local tool_name="${tool%@*}"
+        tool_name="${tool_name##*/}"
+
+        log_info "  Installing Go tool: ${tool_name}..."
+        if GOBIN="$HOME/.local/bin" "$go_cmd" install "$tool"; then
+            log_info "    ${tool_name} installed"
+        else
+            log_warn "    Failed to install ${tool_name}"
+        fi
+    done
 }
 
 # Install CLI tools via Homebrew
@@ -215,6 +253,9 @@ install_brew_tools() {
         "gh"              # GitHub CLI
         "ripgrep"         # Fast grep
         "chezmoi"         # Dotfile manager
+        "ghq"             # Repository manager
+        "docker-compose"  # Docker Compose v2 CLI
+        "ruby"            # Precompiled Ruby (brew bottle)
     )
 
     for tool in "${tools[@]}"; do
@@ -236,6 +277,7 @@ install_brew_casks() {
     local casks=(
         "visual-studio-code"  # VS Code
         "1password-cli"       # 1Password CLI
+        "docker"              # Docker Desktop (daemon + Docker/Compose CLIs)
     )
 
     for cask in "${casks[@]}"; do
@@ -248,6 +290,7 @@ install_brew_casks() {
     done
 
     log_info "Applications installed"
+    log_warn "Start Docker Desktop once from Applications to finish setup and enable docker/compose."
 }
 
 # Install VS Code extensions
@@ -308,7 +351,36 @@ configure_shell() {
         echo "eval \"\$(\$HOME/.local/bin/mise activate zsh)\"" >> "$zshrc"
     fi
 
+    # Ensure ~/.local/bin is on PATH for Go-installed tools
+    if ! grep -q '\.local/bin' "$zshrc" 2>/dev/null; then
+        log_info "Adding ~/.local/bin to .zshrc..."
+        echo "" >> "$zshrc"
+        echo "# Local binaries" >> "$zshrc"
+        echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$zshrc"
+    fi
+
     log_info "Shell configuration updated"
+}
+
+# Configure ghq root
+configure_ghq() {
+    local ghq_root="$HOME/code"
+
+    if [[ ! -d "$ghq_root" ]]; then
+        log_info "Creating ghq root at $ghq_root..."
+        mkdir -p "$ghq_root" || log_warn "Could not create $ghq_root"
+    else
+        log_info "ghq root directory already exists: $ghq_root"
+    fi
+
+    local current_root
+    current_root=$(git config --global ghq.root || true)
+    if [[ "$current_root" != "$ghq_root" ]]; then
+        log_info "Setting ghq.root to $ghq_root..."
+        git config --global ghq.root "$ghq_root"
+    else
+        log_info "ghq.root already set to $ghq_root"
+    fi
 }
 
 # Setup dotfiles via chezmoi
@@ -349,7 +421,9 @@ main() {
     install_ohmyzsh
     install_mise
     install_mise_tools
+    install_go_tools
     configure_shell
+    configure_ghq
     setup_dotfiles
     install_vscode_extensions
 
@@ -364,15 +438,21 @@ main() {
     log_info "    - oh-my-zsh"
     echo ""
     log_info "  Via Homebrew:"
-    log_info "    - git, gh, ripgrep, chezmoi"
+    log_info "    - git, gh, ripgrep, chezmoi, ghq"
+    log_info "    - docker-compose"
+    log_info "    - ruby (brew bottle)"
     log_info "    - 1password-cli"
     echo ""
+    log_info "  Applications:"
+    log_info "    - Docker Desktop (start once to finish setup)"
+    log_info "    - VS Code"
+    echo ""
     log_info "  Via mise:"
-    log_info "    - Go 1.25"
-    log_info "    - Node.js (LTS)"
-    log_info "    - Python 3.12"
-    log_info "    - Ruby 3.3"
-    log_info "    - golangci-lint"
+    log_info "    - Go ${GO_VERSION}"
+    log_info "    - Node.js ${NODE_VERSION}"
+    log_info "    - Python ${PYTHON_VERSION}"
+    log_info "    - golangci-lint ${GOLANGCI_LINT_VERSION}"
+    log_info "    - Go helper tools: wgo"
     echo ""
     log_info "  VS Code extensions (if VS Code installed)"
     echo ""

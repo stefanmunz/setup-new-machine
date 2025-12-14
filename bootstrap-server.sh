@@ -13,6 +13,11 @@
 
 set -e
 
+# Version pins for the default toolchain. Keep in sync with macOS bootstrap.
+GO_VERSION="1.24.4"
+NODE_VERSION="22.11.0"
+PYTHON_VERSION="3.12"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -55,6 +60,9 @@ install_apt_packages() {
         "curl"
         "build-essential"
         "ripgrep"
+        "ca-certificates"
+        "gnupg"
+        "lsb-release"
         "xclip"          # For clipboard in SSH script
     )
 
@@ -138,18 +146,81 @@ install_mise_tools() {
     log_info "Installing development tools via mise..."
 
     # Go
-    log_info "  Installing Go 1.25..."
-    $mise_cmd use --global go@1.25 || log_warn "Failed to install Go"
+    log_info "  Installing Go ${GO_VERSION}..."
+    $mise_cmd use --global "go@${GO_VERSION}" || log_warn "Failed to install Go"
 
-    # Node.js (LTS)
-    log_info "  Installing Node.js (LTS)..."
-    $mise_cmd use --global node@lts || log_warn "Failed to install Node.js"
+    # Node.js
+    log_info "  Installing Node.js ${NODE_VERSION}..."
+    $mise_cmd use --global "node@${NODE_VERSION}" || log_warn "Failed to install Node.js"
 
     # Python
-    log_info "  Installing Python 3.12..."
-    $mise_cmd use --global python@3.12 || log_warn "Failed to install Python"
+    log_info "  Installing Python ${PYTHON_VERSION}..."
+    $mise_cmd use --global "python@${PYTHON_VERSION}" || log_warn "Failed to install Python"
 
     log_info "mise tools installed"
+}
+
+# Install Docker Engine and Compose plugin
+install_docker() {
+    if command -v docker &>/dev/null; then
+        log_info "Docker already installed: $(docker --version | head -1)"
+        return 0
+    fi
+
+    log_info "Installing Docker Engine and Compose..."
+
+    # Add Docker's official GPG key
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+    # Add the repository
+    local codename
+    codename=$(. /etc/os-release && echo "$VERSION_CODENAME")
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${codename} stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+    sudo apt-get update
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    # Allow current user to run docker without sudo (requires re-login)
+    if ! groups "$USER" | grep -q '\bdocker\b'; then
+        sudo usermod -aG docker "$USER" || true
+        log_warn "Added $USER to docker group. Log out/in (or reboot) for this to take effect."
+    fi
+
+    log_info "Docker installed: $(docker --version | head -1)"
+    log_info "Docker Compose: $(docker compose version | head -1)"
+}
+
+# Install ghq via Go
+install_ghq() {
+    if command -v ghq &>/dev/null; then
+        log_info "ghq already installed: $(ghq --version 2>/dev/null | head -1)"
+        return 0
+    fi
+
+    local go_cmd=""
+    if [[ -x "$HOME/.local/share/mise/shims/go" ]]; then
+        go_cmd="$HOME/.local/share/mise/shims/go"
+    elif command -v go &>/dev/null; then
+        go_cmd=$(command -v go)
+    fi
+
+    if [[ -z "$go_cmd" ]]; then
+        log_warn "Go not found; skipping ghq installation"
+        return 0
+    fi
+
+    mkdir -p "$HOME/.local/bin"
+
+    log_info "Installing ghq via Go..."
+    if GOBIN="$HOME/.local/bin" "$go_cmd" install github.com/x-motemen/ghq@latest; then
+        log_info "ghq installed: $(ghq --version 2>/dev/null | head -1)"
+    else
+        log_warn "Failed to install ghq"
+    fi
 }
 
 # Configure shell
@@ -174,6 +245,27 @@ configure_shell() {
     fi
 
     log_info "Shell configuration updated"
+}
+
+# Configure ghq root
+configure_ghq() {
+    local ghq_root="$HOME/code"
+
+    if [[ ! -d "$ghq_root" ]]; then
+        log_info "Creating ghq root at $ghq_root..."
+        mkdir -p "$ghq_root" || log_warn "Could not create $ghq_root"
+    else
+        log_info "ghq root directory already exists: $ghq_root"
+    fi
+
+    local current_root
+    current_root=$(git config --global ghq.root || true)
+    if [[ "$current_root" != "$ghq_root" ]]; then
+        log_info "Setting ghq.root to $ghq_root..."
+        git config --global ghq.root "$ghq_root"
+    else
+        log_info "ghq.root already set to $ghq_root"
+    fi
 }
 
 # Setup dotfiles via chezmoi
@@ -203,11 +295,14 @@ main() {
 
     check_linux
     install_apt_packages
+    install_docker
     install_gh
     install_chezmoi
     install_mise
     install_mise_tools
+    install_ghq
     configure_shell
+    configure_ghq
     setup_dotfiles
 
     echo ""
@@ -218,11 +313,15 @@ main() {
     log_info "Installed:"
     log_info "  Via apt:"
     log_info "    - git, ripgrep, gh"
+    log_info "    - Docker Engine + Compose plugin"
     echo ""
     log_info "  Via mise:"
-    log_info "    - Go 1.25"
-    log_info "    - Node.js (LTS)"
-    log_info "    - Python 3.12"
+    log_info "    - Go ${GO_VERSION}"
+    log_info "    - Node.js ${NODE_VERSION}"
+    log_info "    - Python ${PYTHON_VERSION}"
+    echo ""
+    log_info "  From source:"
+    log_info "    - ghq (via Go install)"
     echo ""
     log_info "  Dotfiles:"
     log_info "    - Via chezmoi"

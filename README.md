@@ -10,9 +10,19 @@ One-command setup for fresh machines with a complete development environment.
 
 **Via Homebrew:** git, gh, ripgrep, chezmoi, VS Code, 1password-cli
 
-**Via mise:** Go 1.25, Node.js (LTS), Python 3.12, Ruby 3.3, golangci-lint
+**Repo management:** ghq (configured to use `~/code` as root)
+
+**Via mise:** Go 1.24.4, Node.js 22.11.0, Python 3.12, golangci-lint 2.5.0
 
 **VS Code Extensions:** Claude Code, Go, Python, Ruby LSP, GitHub Actions, Prettier, etc.
+
+**Go helper binaries:** wgo (for Go hot reload / `make dev`)
+
+**Ruby:** Installed via Homebrew bottle (precompiled, no source build)
+
+**Docker:** Docker Desktop (with Compose v2) + Homebrew docker-compose
+
+Version pins live at the top of `bootstrap.sh`; keep them aligned with your main project so `mise` has everything installed on day one.
 
 **Dotfiles:** .zshrc, .gitconfig, .ssh/config via chezmoi + unique SSH key per machine
 
@@ -70,15 +80,19 @@ If you rerun it manually, ensure 1Password is unlocked first. After your dotfile
 
 **Open a new terminal** for all changes to take effect.
 
+**Start Docker Desktop once** from Applications to finish Docker/Compose setup.
+
 ### Verify
 
 ```bash
 zsh --version      # zsh 5.9+
 git --version      # git 2.x.x (no "Apple Git")
-go version         # go1.25.x
-node --version     # v(LTS)
+go version         # go1.24.4
+node --version     # v22.11.0
+docker --version
+docker compose version
 python --version   # Python 3.12.x
-ruby --version     # ruby 3.3.x
+ruby --version     # ruby 3.3.x (Homebrew bottle)
 ```
 
 ---
@@ -89,7 +103,11 @@ ruby --version     # ruby 3.3.x
 
 **Via apt:** git, gh, ripgrep
 
-**Via mise:** Go 1.25, Node.js (LTS), Python 3.12
+**Repo management:** ghq (via `go install`, root set to `~/code`)
+
+**Via mise:** Go 1.24.4, Node.js 22.11.0, Python 3.12
+
+**Docker:** Docker Engine + Compose plugin
 
 **Dotfiles:** via chezmoi + unique SSH key per machine
 
@@ -101,12 +119,16 @@ curl -fsSL https://raw.githubusercontent.com/stefanmunz/setup-new-machine/main/b
 
 Run `source ~/.bashrc` or open a new terminal.
 
+If this is the first time installing Docker, log out/in (or reboot) so membership in the `docker` group takes effect.
+
 ### Verify
 
 ```bash
 git --version      # git 2.x.x
-go version         # go1.25.x
-node --version     # v(LTS)
+go version         # go1.24.4
+node --version     # v22.11.0
+docker --version
+docker compose version
 python --version   # Python 3.12.x
 ```
 
