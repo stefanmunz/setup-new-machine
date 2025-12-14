@@ -132,6 +132,16 @@ docker compose version
 python --version   # Python 3.12.x
 ```
 
+### Authorize a New Machine's SSH Key on Servers
+
+From an existing machine that can already reach your servers, import your GitHub SSH keys into `authorized_keys` on each server (after the new machine's key is on GitHub):
+
+```bash
+ssh-import-id-gh stefanmunz
+```
+
+Run this once per server (e.g., via `ssh <server> 'ssh-import-id-gh stefanmunz'`) to register the new machine so it can log in.
+
 ---
 
 ## Adding More Tools
